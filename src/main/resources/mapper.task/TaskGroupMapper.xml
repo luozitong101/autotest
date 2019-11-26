@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC
+        "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.lifecycle.task.dao.TaskGroupDao">
+
+    <resultMap id="RMTaskGroup" type="com.lifecycle.autotest.model.TaskGroup">
+        <id property="id" column="id" />
+        <result property="groupType" column="group_type" />
+        <result property="groupName" column="group_name" />
+        <result property="status" column="status" />
+        <result property="completeBean" column="complete_bean" />
+        <result property="concurrentNum" column="concurrent_num" />
+    </resultMap>
+
+    <insert id="insert" >
+        <selectKey resultType="long" keyProperty="id"  order="BEFORE" >
+            SELECT get_sequences('b_task_group') FROM dual
+        </selectKey>
+
+        INSERT INTO B_TASK_GROUP (
+            id, group_type, group_name, status,complete_bean,CREATIONDATE,MODIFIEDDATE, concurrent_num
+        ) VALUES  (
+            #{id}, #{groupType}, #{groupName}, #{status},#{completeBean},sysdate, sysdate, #{concurrentNum}
+        )
+    </insert>
+    
+    <select id="find" resultMap="RMTaskGroup">
+        SELECT * FROM (
+            SELECT a.*, ROWNUM rw FROM (
+                SELECT * FROM B_TASK_GROUP
+                <include refid="whereParam" />
+            )a
+        ) WHERE  rw > #{start} AND rw<![CDATA[ <=   ]]>#{end}
+    </select>
+
+    <sql id="whereParam">
+        <where>
+            <if test="param != null">
+                <if test="param.statuss != null">
+                    AND status in
+                    <foreach collection="param.statuss" close=")" item="item" open="(" separator=",">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="param.id != null">AND id = #{param.id}</if>
+                <if test="param.status != null"> AND status = #{param.status}</if>
+                <if test="param.type != null"> AND type = #{param.type}</if>
+            </if>
+        </where>
+    </sql>
+
+    <update id="update">
+        update B_TASK_GROUP set  id=#{id}
+        <if test="status != null"> , status = #{status}</if>
+        <if test="logPath != null"> , logPath = #{logPath}</if>
+        <if test="startDate != null"> , Start_Time = #{startDate}</if>
+        <if test="endDate != null">, End_Time = #{endDate}</if>
+        where  id = #{id}
+    </update>
+    <select id="selectById" resultMap="RMTaskGroup">
+        select id, status from b_task_group where id = #{id}
+    </select>
+
+
+    <select id="selectByType" resultType="int">
+        select count(1) from b_task_group where group_type = #{groupType} and status = 'IMPLEMENTED'
+    </select>
+
+    <select id="findByIds" resultMap="RMTaskGroup" >
+
+        SELECT STATUS FROM B_TASK_GROUP WHERE ID IN
+        <foreach collection="param" item="id" separator="," close=")" open="(">
+            #{id}
+        </foreach>
+    </select>
+</mapper>
